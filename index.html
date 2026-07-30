@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; worker-src 'self' blob:; child-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-src 'none'; form-action 'self'"
+    />
+    <meta
+      name="description"
+      content="OpenDraft — serverless LaTeX editor. Compiles in your browser."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="OpenDraft — Local-first LaTeX editor" />
+    <meta
+      property="og:description"
+      content="Write, compile and review technical documents in one precise browser workspace."
+    />
+    <meta
+      property="og:image"
+      content="https://opendraft-local-latex.margaridalamas-advog.chatgpt.site/og.png"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="OpenDraft — Local-first LaTeX editor" />
+    <meta
+      name="twitter:description"
+      content="Write, compile and review technical documents in one precise browser workspace."
+    />
+    <meta
+      name="twitter:image"
+      content="https://opendraft-local-latex.margaridalamas-advog.chatgpt.site/og.png"
+    />
+    <title>OpenDraft</title>
+
+    <!-- Prevent theme flash: read persisted preference before React mounts. -->
+    <script src="/theme-init.js"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

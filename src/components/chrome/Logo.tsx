@@ -1,0 +1,39 @@
+interface LogoProps {
+  withName?: boolean;
+}
+
+export function Logo({ withName = true }: LogoProps) {
+  return (
+    <div className="od-logo">
+      <span className="od-logo-mark" aria-hidden="true">
+        <svg viewBox="0 0 26 30" focusable="false">
+          <path
+            d="M753 238Q795 312 826.5 407.5Q858 503 869 569Q866 614 853 652.5Q840 691 810 725Q781 758 739 777Q697 796 639 796Q509 796 408.5 654.5Q308 513 308 324Q308 266 316.5 218.5Q325 171 348 131Q370 94 407.5 71Q445 48 500 48Q578 48 642.5 102Q707 156 753 238ZM484 1329Q485 1309 489 1279.5Q493 1250 492 1220Q491 1166 466.5 1134Q442 1102 378 1102Q325 1102 298.5 1134.5Q272 1167 272 1210Q272 1249 296.5 1291Q321 1333 364 1369Q409 1407 479.5 1431.5Q550 1456 639 1456Q764 1456 852.5 1410Q941 1364 999 1286Q1056 1209 1082.5 1108.5Q1109 1008 1109 898Q1109 761 1073 596Q1037 431 963 298Q870 131 752.5 49.5Q635 -32 499 -32Q314 -32 213 83Q112 198 112 385Q112 593 255.5 753Q399 913 573 913Q696 913 775.5 866.5Q855 820 900 732Q905 776 907.5 819Q910 862 910 919Q910 1005 895.5 1094Q881 1183 853 1241Q822 1305 769 1341Q716 1377 637 1377Q583 1377 545.5 1362Q508 1347 484 1329Z"
+            transform="translate(5.5 24.5) scale(.013 -.013)"
+          />
+          <path className="od-logo-fold" d="M18.5 1v7h6.5" />
+        </svg>
+      </span>
+      {withName && <span>OpenDraft</span>}
+    </div>
+  );
+}
+
+interface BrandHomeProps extends LogoProps {
+  onHome: () => void;
+}
+
+/** Consistent product-home affordance used outside the landing screen. */
+export function BrandHome({ onHome, withName = true }: BrandHomeProps) {
+  return (
+    <button
+      className="od-logo-button"
+      type="button"
+      onClick={onHome}
+      aria-label="Go to OpenDraft home"
+      title="OpenDraft home"
+    >
+      <Logo withName={withName} />
+    </button>
+  );
+}

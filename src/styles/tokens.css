@@ -1,0 +1,157 @@
+/* OpenDraft visual system: warm paper, charcoal ink and restrained terracotta. */
+
+:root {
+  color-scheme: light;
+
+  --od-paper: #f7f6f2;
+  --od-paper-1: #fcfbf8;
+  --od-paper-2: #f0efea;
+  --od-paper-3: #e9e7e0;
+  --od-elevated: #ffffff;
+  --od-editor: #fdfcf9;
+  --od-border: #e1ded6;
+  --od-border-strong: #c3bdb2;
+  --od-ink: #2b2925;
+  --od-fg: #2b2925;
+  --od-ink-2: #535049;
+  --od-muted: #716c63;
+  --od-muted-2: #89837a;
+
+  --od-accent: #99543e;
+  --od-accent-bright: #864733;
+  --od-accent-ink: #ffffff;
+  --od-accent-wash: #f4ebe6;
+  --od-accent-line: #c99784;
+  --od-gold: #7a612c;
+  --od-gold-wash: #efe6d2;
+
+  --od-button-bg: var(--od-paper-1);
+  --od-button-fg: var(--od-ink);
+  --od-button-hover-bg: var(--od-paper-3);
+  --od-button-primary-bg: #302e2a;
+  --od-button-primary-fg: #ffffff;
+  --od-button-primary-hover-bg: #45413b;
+  --od-button-soft-bg: var(--od-accent-wash);
+  --od-button-soft-fg: var(--od-accent);
+  --od-coral: var(--od-accent);
+  --od-coral-wash: var(--od-accent-wash);
+  --od-coral-ink: #91412c;
+
+  --od-ok: #2e7154;
+  --od-ok-wash: #ddece4;
+  --od-warn: #8a641b;
+  --od-warn-wash: #f1e6cc;
+  --od-err: #a64a3e;
+  --od-err-wash: #f3dfda;
+  --od-info: #725a8a;
+  --od-info-wash: #eae2ef;
+
+  --syn-fg: #2a2825;
+  --syn-comment: #625d56;
+  --syn-keyword: #9b4057;
+  --syn-cmd: #955027;
+  --syn-arg: #3f715c;
+  --syn-opt: #6a5a8c;
+  --syn-math: #72508f;
+  --syn-string: #5a725e;
+  --syn-num: #a5522a;
+  --syn-punct: #6f6961;
+  --syn-error: #a63d42;
+  --syn-error-wash: #f3dfe0;
+  --syn-warn: #8a641b;
+  --syn-warn-wash: #f1e6cc;
+  --syn-cursor: #24221f;
+
+  --od-radius: 8px;
+  --od-radius-lg: 12px;
+  --od-radius-sm: 6px;
+  --od-shadow: 0 1px 2px rgb(36 34 31 / 5%);
+  --od-shadow-lg: 0 18px 50px rgb(36 34 31 / 9%);
+  --focus-ring: 0 0 0 2px var(--od-paper), 0 0 0 4px var(--od-accent);
+  --od-row: 34px;
+  --od-fs: 13px;
+  --od-fs-sm: 12px;
+  --od-fs-xs: 10px;
+  --od-sans: "Aptos", "Helvetica Neue", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --od-font: var(--od-sans);
+  --od-serif:
+    "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, Cambria, Georgia, serif;
+  --od-mono: "Cascadia Code", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --od-font-mono: var(--od-mono);
+  --od-ease: cubic-bezier(0.2, 0.75, 0.25, 1);
+  --od-dur-fast: 120ms;
+  --od-dur: 200ms;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --od-paper: #2a2925;
+  --od-paper-1: #302e29;
+  --od-paper-2: #24231f;
+  --od-paper-3: #3a3731;
+  --od-elevated: #35322d;
+  --od-editor: #292722;
+  --od-border: #4c4841;
+  --od-border-strong: #71695e;
+  --od-ink: #f2efe8;
+  --od-fg: #f2efe8;
+  --od-ink-2: #d7d0c5;
+  --od-muted: #aaa297;
+  --od-muted-2: #918a80;
+
+  --od-accent: #d88a6d;
+  --od-accent-bright: #e39a7f;
+  --od-accent-ink: #26150f;
+  --od-accent-wash: #3a2b25;
+  --od-accent-line: #8d5b49;
+  --od-gold: #d0b172;
+  --od-gold-wash: #3a3122;
+
+  --od-button-bg: transparent;
+  --od-button-fg: var(--od-ink);
+  --od-button-hover-bg: var(--od-paper-3);
+  --od-button-primary-bg: #ede8df;
+  --od-button-primary-fg: #292721;
+  --od-button-primary-hover-bg: #ffffff;
+  --od-button-soft-bg: var(--od-accent-wash);
+  --od-button-soft-fg: var(--od-ink);
+  --od-coral: var(--od-accent);
+  --od-coral-wash: var(--od-accent-wash);
+  --od-coral-ink: #efc6b6;
+
+  --od-ok: #79c59b;
+  --od-ok-wash: #20382b;
+  --od-warn: #dbb76b;
+  --od-warn-wash: #372e1d;
+  --od-err: #eb9182;
+  --od-err-wash: #402722;
+  --od-info: #c2a0cf;
+  --od-info-wash: #34273a;
+
+  --syn-fg: #e8e3da;
+  --syn-comment: #aaa297;
+  --syn-keyword: #d98296;
+  --syn-cmd: #d9a267;
+  --syn-arg: #86b89a;
+  --syn-opt: #b2a0d0;
+  --syn-math: #c3a3dd;
+  --syn-string: #a9b99e;
+  --syn-num: #dea06f;
+  --syn-punct: #aaa297;
+  --syn-error: #ef8c82;
+  --syn-error-wash: #402722;
+  --syn-warn: #d9ad65;
+  --syn-warn-wash: #372e1d;
+  --syn-cursor: #f2efe8;
+
+  --od-shadow: 0 1px 2px rgb(0 0 0 / 18%);
+  --od-shadow-lg: 0 18px 48px rgb(0 0 0 / 24%);
+  --focus-ring: 0 0 0 2px var(--od-paper), 0 0 0 4px var(--od-accent);
+}
+
+[data-density="compact"] {
+  --od-row: 29px;
+  --od-fs: 12px;
+  --od-fs-sm: 11px;
+}
