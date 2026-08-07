@@ -27,6 +27,7 @@
     "test:ui": "vitest --ui",
     "test:e2e": "npm run build && playwright test",
     "test:e2e:ci": "npm run build && playwright test --project=chromium --grep-invert @heavy",
+    "assets:og": "node scripts/generate-og-image.mjs",
     "setup:engine": "node scripts/setup-engine.mjs",
     "setup:engine:swift": "node scripts/setup-engine.mjs --swift-only",
     "security:audit": "npm audit --audit-level=moderate",

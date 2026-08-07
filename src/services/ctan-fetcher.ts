@@ -24,11 +24,17 @@ export interface CtanFetcherOptions {
    *  (a small `.tar.xz` can inflate to gigabytes). Defaults to 128 MB;
    *  the largest real TeX Live package archives are well under this. */
   maxDecompressedBytes?: number;
+  /** Same-origin directory containing format-compatible package manifests. */
+  pinnedPackageBase?: string | null;
 }
 
 const DEFAULT_INDEX_URL = "/engine/texlive-index.json";
 /** TeX Live packages remain well below this ceiling under normal operation. */
 const DEFAULT_MAX_DECOMPRESSED_BYTES = 128 * 1024 * 1024;
+const DEFAULT_PINNED_PACKAGE_BASE = "/engine/packages";
+const MAX_PINNED_MANIFEST_BYTES = 64 * 1024;
+const MAX_PINNED_FILES = 128;
+const PINNED_RUNTIME_PACKAGES = new Set(["l3kernel"]);
 /** TeX Live package names are lowercase alphanumerics with dots,
  *  hyphens, and underscores. Reject anything else so a poisoned index
  *  can't traverse or rewrite the mirror URL. */
@@ -39,11 +45,25 @@ const DEFAULT_MIRROR = import.meta.env.VITE_CTAN_MIRROR_BASE?.trim() || "/ctan";
 
 type IndexShape = Record<string, string[] | undefined>;
 
+interface PinnedPackageFile {
+  filename: string;
+  path: string;
+  size: number;
+}
+
+interface PinnedPackageManifest {
+  package: string;
+  version: string;
+  sourceSha256: string;
+  files: PinnedPackageFile[];
+}
+
 export class CtanFetcher {
   private readonly indexUrl: string;
   private readonly mirrorBase: string;
   private readonly fetchImpl: typeof fetch;
   private readonly maxDecompressedBytes: number;
+  private readonly pinnedPackageBase: string | null;
   private indexPromise: Promise<IndexShape> | null = null;
   private readonly packageCache = new Map<string, CtanFile[]>();
   /** Coalesces concurrent downloads of the same package. */
@@ -54,6 +74,10 @@ export class CtanFetcher {
     this.mirrorBase = options.mirrorBase ?? DEFAULT_MIRROR;
     this.fetchImpl = options.fetchImpl ?? fetch.bind(globalThis);
     this.maxDecompressedBytes = options.maxDecompressedBytes ?? DEFAULT_MAX_DECOMPRESSED_BYTES;
+    this.pinnedPackageBase =
+      options.pinnedPackageBase === undefined
+        ? DEFAULT_PINNED_PACKAGE_BASE
+        : (options.pinnedPackageBase?.replace(/\/$/, "") ?? null);
   }
 
   /**
@@ -82,12 +106,24 @@ export class CtanFetcher {
     // `00texlive.*` entries are metadata-only and never resolve to
     // an archive. We try each remaining entry in order and return
     // the first non-empty result.
-    for (const pkg of packages) {
+    // A rolling index may change candidate order. Format-locked packages must
+    // win over development or mirror variants whenever they are available.
+    const orderedPackages = [
+      ...packages.filter((pkg) => typeof pkg === "string" && this.isPinnedPackage(pkg)),
+      ...packages.filter((pkg) => typeof pkg !== "string" || !this.isPinnedPackage(pkg)),
+    ];
+    for (const pkg of orderedPackages) {
       if (typeof pkg !== "string" || pkg.startsWith("00texlive.")) continue;
       if (!VALID_PACKAGE_NAME.test(pkg)) continue;
-      const files = await this.fetchPackage(pkg).catch(() => {
-        return null;
-      });
+      let files: CtanFile[] | null;
+      try {
+        files = await this.fetchPackage(pkg);
+      } catch (error) {
+        // A pinned kernel must never silently fall through to a rolling CTAN
+        // variant: that recreates the format/package mismatch this lock avoids.
+        if (this.isPinnedPackage(pkg)) throw error;
+        files = null;
+      }
       if (files && files.length > 0) return files;
     }
     return [];
@@ -107,7 +143,9 @@ export class CtanFetcher {
     const inflight = this.packageInflight.get(pkg);
     if (inflight) return inflight;
 
-    const promise = this.downloadAndExtract(pkg)
+    const promise = (
+      this.isPinnedPackage(pkg) ? this.downloadPinnedPackage(pkg) : this.downloadAndExtract(pkg)
+    )
       .then((files) => {
         this.packageCache.set(pkg, files);
         if (this.packageCache.size > 20) {
@@ -172,6 +210,88 @@ export class CtanFetcher {
     }
     return out;
   }
+
+  private isPinnedPackage(pkg: string): boolean {
+    return this.pinnedPackageBase !== null && PINNED_RUNTIME_PACKAGES.has(pkg);
+  }
+
+  private async downloadPinnedPackage(pkg: string): Promise<CtanFile[]> {
+    if (!this.pinnedPackageBase) throw new Error(`Pinned package base is unavailable for ${pkg}`);
+    const manifestUrl = `${this.pinnedPackageBase}/${encodeURIComponent(pkg)}.json`;
+    const manifestResponse = await this.fetchImpl(manifestUrl);
+    if (!manifestResponse.ok) {
+      throw new Error(`${manifestUrl} -> HTTP ${manifestResponse.status}`);
+    }
+    const manifestText = await manifestResponse.text();
+    if (new TextEncoder().encode(manifestText).byteLength > MAX_PINNED_MANIFEST_BYTES) {
+      throw new Error(`${pkg} pinned package manifest exceeds the size limit`);
+    }
+    const manifest = parsePinnedManifest(manifestText, pkg, this.maxDecompressedBytes);
+
+    return Promise.all(
+      manifest.files.map(async (file) => {
+        const url = `${this.pinnedPackageBase}/${encodeURIComponent(pkg)}/${encodeURIComponent(file.filename)}`;
+        const res = await this.fetchImpl(url);
+        if (!res.ok) throw new Error(`${url} -> HTTP ${res.status}`);
+        const content = new Uint8Array(await res.arrayBuffer());
+        if (content.byteLength !== file.size) {
+          throw new Error(`${url} -> expected ${file.size} bytes, received ${content.byteLength}`);
+        }
+        return { filename: file.filename, path: file.path, content };
+      }),
+    );
+  }
+}
+
+function parsePinnedManifest(
+  raw: string,
+  expectedPackage: string,
+  maxBytes: number,
+): PinnedPackageManifest {
+  let candidate: unknown;
+  try {
+    candidate = JSON.parse(raw);
+  } catch {
+    throw new Error(`${expectedPackage} pinned package manifest is invalid JSON`);
+  }
+  if (!candidate || typeof candidate !== "object") {
+    throw new Error(`${expectedPackage} pinned package manifest is invalid`);
+  }
+  const manifest = candidate as Partial<PinnedPackageManifest>;
+  if (
+    manifest.package !== expectedPackage ||
+    typeof manifest.version !== "string" ||
+    typeof manifest.sourceSha256 !== "string" ||
+    !Array.isArray(manifest.files) ||
+    manifest.files.length === 0 ||
+    manifest.files.length > MAX_PINNED_FILES
+  ) {
+    throw new Error(`${expectedPackage} pinned package manifest is invalid`);
+  }
+  let total = 0;
+  const names = new Set<string>();
+  for (const file of manifest.files) {
+    if (
+      !file ||
+      typeof file.filename !== "string" ||
+      !file.filename ||
+      file.filename.includes("/") ||
+      file.filename.includes("\\") ||
+      names.has(file.filename) ||
+      typeof file.path !== "string" ||
+      file.path.split(/[\\/]/).includes("..") ||
+      !Number.isSafeInteger(file.size) ||
+      file.size < 0
+    ) {
+      throw new Error(`${expectedPackage} pinned package manifest contains an invalid file`);
+    }
+    names.add(file.filename);
+    total += file.size;
+    if (total > maxBytes) {
+      throw new Error(`${expectedPackage} pinned package exceeds ${maxBytes} byte limit`);
+    }
+  }
+  return manifest as PinnedPackageManifest;
 }
 
 async function readAll(stream: ReadableStream<Uint8Array>, maxBytes: number): Promise<Uint8Array> {

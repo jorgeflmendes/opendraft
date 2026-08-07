@@ -26,6 +26,20 @@ const FMT_URL =
 // Pin the same TLNET mirror used by the development and production proxies.
 const TLPDB_URL = "https://mirrors.up.pt/pub/CTAN/systems/texlive/tlnet/tlpkg/texlive.tlpdb";
 
+// The pre-built format embeds L3 2026-06-19. Loading a newer l3kernel from
+// the rolling CTAN mirror makes LaTeX reject the mixed support files. Keep
+// this format-sensitive package locked to the immediately preceding stable
+// release; the generated runtime files remain ignored under public/engine/.
+const PINNED_RUNTIME_PACKAGES = [
+  {
+    name: "l3kernel",
+    version: "2026-06-18",
+    url: "https://github.com/latex3/latex3/releases/download/2026-06-18/l3kernel.tds.zip",
+    sha256: "724f21b14bf0d1cc3d9669fef93c20a5d2d5bfbd4a6a0a40fbae45719fadd2a7",
+    prefix: "tex/latex/l3kernel/",
+  },
+];
+
 const BINARY_FILES = [
   {
     name: "swiftlatexpdftex.worker.js",
@@ -43,6 +57,7 @@ const require = createRequire(import.meta.url);
 const outDir = resolve(here, "..", "public", "engine");
 const busyTexOutDir = resolve(here, "..", "public", "core");
 const busyTexVersion = require("texlyre-busytex/package.json").version;
+const JSZip = require("jszip");
 const busyTexVersionFile = join(busyTexOutDir, ".busytex-version");
 
 async function ensureDir(p) {
@@ -84,6 +99,79 @@ async function alreadyHave(dest, minSize) {
   } catch {
     return false;
   }
+}
+
+async function pinnedPackageLooksValid(pkg) {
+  try {
+    const manifestPath = join(outDir, "packages", `${pkg.name}.json`);
+    const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+    if (
+      manifest.package !== pkg.name ||
+      manifest.version !== pkg.version ||
+      manifest.sourceSha256 !== pkg.sha256 ||
+      !Array.isArray(manifest.files) ||
+      manifest.files.length === 0
+    ) {
+      return false;
+    }
+    for (const file of manifest.files) {
+      if (
+        typeof file?.filename !== "string" ||
+        basename(file.filename) !== file.filename ||
+        typeof file?.size !== "number"
+      ) {
+        return false;
+      }
+      const info = await stat(join(outDir, "packages", pkg.name, file.filename));
+      if (!info.isFile() || info.size !== file.size) return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function provisionPinnedPackage(pkg) {
+  process.stdout.write(`  ↓ ${pkg.name} ${pkg.version} (format-compatible) … `);
+  const res = await fetch(pkg.url);
+  if (!res.ok) throw new Error(`${pkg.url} → HTTP ${res.status}`);
+  const source = new Uint8Array(await res.arrayBuffer());
+  const actualHash = createHash("sha256").update(source).digest("hex");
+  if (actualHash !== pkg.sha256) {
+    throw new Error(`${pkg.name} archive hash mismatch`);
+  }
+
+  const zip = await JSZip.loadAsync(source);
+  const entries = Object.values(zip.files).filter(
+    (entry) => !entry.dir && entry.name.startsWith(pkg.prefix),
+  );
+  if (entries.length === 0) throw new Error(`${pkg.name} archive has no runtime files`);
+
+  const packageDir = join(outDir, "packages", pkg.name);
+  await rm(packageDir, { recursive: true, force: true });
+  await mkdir(packageDir, { recursive: true });
+  const manifestFiles = [];
+  const seen = new Set();
+  for (const entry of entries) {
+    const filename = basename(entry.name);
+    if (!filename || filename.includes("/") || filename.includes("\\") || seen.has(filename)) {
+      throw new Error(`${pkg.name} archive contains an unsafe or duplicate basename`);
+    }
+    seen.add(filename);
+    const content = await entry.async("uint8array");
+    await writeFile(join(packageDir, filename), content);
+    manifestFiles.push({ filename, path: entry.name, size: content.byteLength });
+  }
+  manifestFiles.sort((a, b) => a.filename.localeCompare(b.filename));
+  const manifest = {
+    package: pkg.name,
+    version: pkg.version,
+    sourceSha256: pkg.sha256,
+    files: manifestFiles,
+  };
+  await mkdir(join(outDir, "packages"), { recursive: true });
+  await writeFile(join(outDir, "packages", `${pkg.name}.json`), JSON.stringify(manifest), "utf8");
+  console.log(`${manifestFiles.length} runtime files`);
 }
 
 /**
@@ -320,6 +408,16 @@ async function main() {
     }
     console.log(`${(bytes / 1024 / 1024).toFixed(2)} MB`);
     downloaded++;
+  }
+
+  for (const pkg of PINNED_RUNTIME_PACKAGES) {
+    if (!force && (await pinnedPackageLooksValid(pkg))) {
+      console.log(`  ✓ ${pkg.name} ${pkg.version} (already present, --force to refresh)`);
+      skipped++;
+    } else {
+      await provisionPinnedPackage(pkg);
+      downloaded++;
+    }
   }
 
   const indexDest = join(outDir, "texlive-index.json");

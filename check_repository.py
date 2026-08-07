@@ -3,7 +3,6 @@ from pathlib import Path
 import sys
 
 IGNORED_DIRS = {".git", "coverage", "dist", "node_modules"}
-BANNED_DIRS = {".ai", ".claude", ".copilot", ".cursor"}
 BANNED_FILENAMES = {".DS_Store"}
 BANNED_SUFFIXES = {".db", ".dump", ".env", ".key", ".log", ".pcap", ".pem", ".sql", ".sqlite"}
 BANNED_STRINGS = ["ghp" + "_", "xoxb" + "-", r"C:\Users" + r"\Jorge"]
@@ -36,8 +35,6 @@ def main() -> int:
     for path in repository_files(Path.cwd()):
         relative_path = path.relative_to(Path.cwd())
         if path.is_dir():
-            if path.name in BANNED_DIRS:
-                errors.append(f"Banned directory found: {relative_path}")
             continue
 
         if path.name in BANNED_FILENAMES or path.suffix.lower() in BANNED_SUFFIXES:

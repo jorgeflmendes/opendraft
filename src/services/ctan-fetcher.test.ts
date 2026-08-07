@@ -166,4 +166,51 @@ describe("CtanFetcher", () => {
     const archiveCall = fetchImpl.mock.calls.find((c) => String(c[0]).includes("/archive/"));
     expect(archiveCall?.[0]).toBe("https://m.example/archive/latex.ltx-pkg.tar.xz");
   });
+
+  it("loads the format-compatible l3kernel from pinned same-origin assets", async () => {
+    // The rolling index may list its development variant first; the format
+    // lock still takes precedence.
+    const idx = JSON.stringify({ "expl3.sty": ["l3kernel-dev", "l3kernel"] });
+    const manifest = JSON.stringify({
+      package: "l3kernel",
+      version: "2026-06-18",
+      sourceSha256: "abc",
+      files: [
+        { filename: "expl3-code.tex", path: "tex/latex/l3kernel/expl3-code.tex", size: 2 },
+        { filename: "expl3.sty", path: "tex/latex/l3kernel/expl3.sty", size: 1 },
+      ],
+    });
+    const fetchImpl = vi.fn(async (url) => {
+      const value = String(url);
+      if (value.endsWith("/idx.json")) return jsonResponse(idx);
+      if (value.endsWith("/engine/packages/l3kernel.json")) return jsonResponse(manifest);
+      if (value.endsWith("/expl3-code.tex")) return new Response(new Uint8Array([1, 2]));
+      if (value.endsWith("/expl3.sty")) return new Response(new Uint8Array([3]));
+      return new Response("nope", { status: 404 });
+    });
+    const fetcher = new CtanFetcher({ fetchImpl, indexUrl: "/idx.json" });
+
+    const files = await fetcher.fetchByFilename("expl3.sty");
+
+    expect(files.map((file) => file.filename)).toEqual(["expl3-code.tex", "expl3.sty"]);
+    expect(fetchImpl.mock.calls.some((call) => String(call[0]).includes("/archive/"))).toBe(false);
+  });
+
+  it("does not fall through to rolling CTAN when a pinned kernel asset is unavailable", async () => {
+    const idx = JSON.stringify({ "expl3.sty": ["l3kernel", "l3kernel-dev"] });
+    const fetchImpl = vi.fn(async (url) => {
+      if (String(url).endsWith("/idx.json")) return jsonResponse(idx);
+      return new Response("missing", { status: 404 });
+    });
+    const fetcher = new CtanFetcher({
+      fetchImpl,
+      indexUrl: "/idx.json",
+      mirrorBase: "https://m.example",
+    });
+
+    await expect(fetcher.fetchByFilename("expl3.sty")).rejects.toThrow(/l3kernel\.json.*404/);
+    expect(fetchImpl.mock.calls.some((call) => String(call[0]).includes("l3kernel-dev"))).toBe(
+      false,
+    );
+  });
 });

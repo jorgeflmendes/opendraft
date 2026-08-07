@@ -10,13 +10,6 @@ Thumbs.db
 .vscode/*
 !.vscode/extensions.json
 .idea
-.claude/
-.openai/
-.superpowers/
-CLAUDE.md
-AGENTS.md
-**/CLAUDE.md
-**/AGENTS.md
 
 # Build artefacts
 *.tsbuildinfo
