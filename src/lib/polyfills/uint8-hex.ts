@@ -1,7 +1,7 @@
 // Polyfill `Uint8Array.prototype.toHex` and `Uint8Array.fromHex`
 // for browsers without the Stage-3 proposal yet.
 //
-// pdfjs-dist 5.x assumes the proposal is shipped - its
+// PDF.js assumes the proposal is shipped - its
 // document-fingerprint code calls `hashBytes.toHex()` unconditionally
 // in a browser matrix we still support.
 //

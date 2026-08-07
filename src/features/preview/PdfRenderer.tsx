@@ -5,7 +5,7 @@ import {
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
-import type { PDFDocumentProxy, PDFPageProxy } from "pdfjs-dist";
+import type { PDFDocumentLoadingTask, PDFDocumentProxy, PDFPageProxy } from "pdfjs-dist";
 import type { PDFViewer } from "pdfjs-dist/web/pdf_viewer.mjs";
 import "pdfjs-dist/web/pdf_viewer.css";
 import { Button, I } from "@/components/primitives";
@@ -130,6 +130,7 @@ export function PdfRenderer({
 
     const controller = new AbortController();
     let activeDoc: PDFDocumentProxy | null = null;
+    let activeLoadingTask: PDFDocumentLoadingTask | null = null;
 
     void (async () => {
       try {
@@ -139,19 +140,23 @@ export function PdfRenderer({
 
         const data = new Uint8Array(pdf.byteLength);
         data.set(pdf);
-        activeDoc = await pdfjs.getDocument({
+        activeLoadingTask = pdfjs.getDocument({
           data,
           cMapUrl: "/pdfjs/cmaps/",
           cMapPacked: true,
           standardFontDataUrl: "/pdfjs/standard_fonts/",
-        }).promise;
+        });
+        activeDoc = await activeLoadingTask.promise;
         if (controller.signal.aborted) {
-          await activeDoc.destroy();
+          await activeLoadingTask.destroy();
+          activeLoadingTask = null;
           return;
         }
 
         const eventBus = new pdfViewerModule.EventBus();
         const linkService = new pdfViewerModule.PDFLinkService({ eventBus });
+        // Deliberately omit scriptingManager: project PDFs are untrusted, and
+        // PDFViewer keeps embedded scripting disabled when no manager exists.
         const viewer = new pdfViewerModule.PDFViewer({
           container,
           viewer: viewerElement,
@@ -215,7 +220,7 @@ export function PdfRenderer({
       viewerRef.current = null;
       viewerElement.replaceChildren();
       setDoc(null);
-      if (activeDoc) void activeDoc.destroy();
+      if (activeLoadingTask) void activeLoadingTask.destroy();
     };
   }, [pdf, syncViewerState]);
 

@@ -1,4 +1,4 @@
-// Runtime compatibility required by pdfjs-dist 5.x. These imports
+// Runtime compatibility required by PDF.js. These imports
 // are side-effect only and must run before any lazy PDF.js chunk.
 import "@/lib/polyfills/collection-upsert";
 import "@/lib/polyfills/uint8-hex";

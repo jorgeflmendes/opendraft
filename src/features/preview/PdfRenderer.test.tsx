@@ -7,6 +7,7 @@ import { useShortcutStore } from "@/store/shortcuts";
 const mocks = vi.hoisted(() => ({
   viewerInstances: [] as MockPdfViewer[],
   renderPage: vi.fn(() => ({ promise: Promise.resolve(), cancel: vi.fn() })),
+  destroyLoadingTask: vi.fn(() => Promise.resolve()),
 }));
 
 const makePage = () => ({
@@ -17,7 +18,6 @@ const makePage = () => ({
 const fakeDoc = {
   numPages: 3,
   getPage: vi.fn(async () => makePage()),
-  destroy: vi.fn(() => Promise.resolve()),
 };
 
 class MockEventBus {
@@ -155,7 +155,10 @@ class MockPdfLinkService {
 }
 
 vi.mock("pdfjs-dist", () => ({
-  getDocument: vi.fn(() => ({ promise: Promise.resolve(fakeDoc) })),
+  getDocument: vi.fn(() => ({
+    promise: Promise.resolve(fakeDoc),
+    destroy: mocks.destroyLoadingTask,
+  })),
   GlobalWorkerOptions: { workerSrc: "" },
 }));
 
@@ -174,8 +177,8 @@ beforeEach(() => {
   useShortcutStore.getState().resetAll();
   mocks.viewerInstances.length = 0;
   mocks.renderPage.mockClear();
+  mocks.destroyLoadingTask.mockClear();
   fakeDoc.getPage.mockClear();
-  fakeDoc.destroy.mockClear();
   Object.defineProperty(window, "devicePixelRatio", { configurable: true, value: 1 });
   HTMLCanvasElement.prototype.getContext = vi.fn(
     () => ({}) as CanvasRenderingContext2D,
@@ -195,6 +198,15 @@ describe("<PdfRenderer />", () => {
       vi.unstubAllGlobals();
       Reflect.deleteProperty(globalThis, "__pdfWorkerFallbackLoaded");
     }
+  });
+
+  it("destroys the PDF loading task when the renderer unmounts", async () => {
+    const { unmount } = render(<PdfRenderer pdf={new Uint8Array([1, 2, 3])} />);
+    await screen.findByText("Page 1 of 3");
+
+    unmount();
+
+    expect(mocks.destroyLoadingTask).toHaveBeenCalledOnce();
   });
 
   it("delegates page and selectable text rendering to the official PDF.js viewer", async () => {
