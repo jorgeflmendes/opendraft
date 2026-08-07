@@ -19,6 +19,7 @@ export { MemoryKVStore, PersistenceProjectStore, type SavedProject } from "./per
 
 import type { ProjectService } from "./project-service";
 import type { CompileService } from "./compile-service";
+import { assetUrl } from "@/lib/asset-url";
 import { CompositeProjectService } from "./composite-project-service";
 import { IDBKVStore, PersistenceProjectStore, type SavedProject } from "./persistence";
 
@@ -77,8 +78,8 @@ let compileResolved: CompileService | null = null;
 let compileResolving: Promise<CompileService> | null = null;
 /** URL probed once on first getCompileService(); presence indicates
  *  the user ran `npm run setup:engine` and the worker is available. */
-const BUSYTEX_PROBE_URL = "/core/busytex/busytex_worker.js";
-const SWIFTLATEX_PROBE_URL = "/engine/swiftlatexpdftex.worker.js";
+const BUSYTEX_PROBE_URL = assetUrl("core/busytex/busytex_worker.js");
+const SWIFTLATEX_PROBE_URL = assetUrl("engine/swiftlatexpdftex.worker.js");
 
 /**
  * Returns the active CompileService binding. Order of precedence:

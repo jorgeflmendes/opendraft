@@ -1,4 +1,5 @@
 import { activeFilePaths, type CompileResult, type LogEntry, type Project } from "@/domain";
+import { assetUrl } from "@/lib/asset-url";
 import { dirname } from "./path-utils";
 import type { CompileInput, CompileProgress, CompileService } from "./compile-service";
 import { generateClassicBibtexBbl } from "./classic-bibtex";
@@ -37,10 +38,10 @@ export class SwiftLaTeXCompileService implements CompileService {
   private inflight: Promise<unknown> = Promise.resolve();
 
   constructor(options: SwiftLaTeXCompileOptions = {}) {
-    this.workerUrl = options.workerUrl ?? "/engine/swiftlatexpdftex.worker.js";
-    this.fmtUrl = options.fmtUrl ?? "/engine/swiftlatexpdftex.fmt";
-    this.pdftexMapUrl = options.pdftexMapUrl ?? "/engine/pdftex.map";
-    this.ctanIndexUrl = options.ctanIndexUrl ?? "/engine/texlive-index.json";
+    this.workerUrl = options.workerUrl ?? assetUrl("engine/swiftlatexpdftex.worker.js");
+    this.fmtUrl = options.fmtUrl ?? assetUrl("engine/swiftlatexpdftex.fmt");
+    this.pdftexMapUrl = options.pdftexMapUrl ?? assetUrl("engine/pdftex.map");
+    this.ctanIndexUrl = options.ctanIndexUrl ?? assetUrl("engine/texlive-index.json");
     this.engineLabel = options.engine ?? "pdfTeX · WASM (CTAN-fetching)";
     this.maxPasses = options.maxPasses ?? MAX_LATEX_PASSES;
     this.freshEnginePerCompile = options.freshEnginePerCompile ?? false;

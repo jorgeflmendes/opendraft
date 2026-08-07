@@ -11,6 +11,7 @@ import "pdfjs-dist/web/pdf_viewer.css";
 import { Button, I } from "@/components/primitives";
 import { errorMessage } from "@/lib/errors";
 import { matchesAnyCombo } from "@/lib/keymap";
+import { assetUrl } from "@/lib/asset-url";
 import type { PdfRect } from "@/services/synctex";
 import { useShortcutBindings } from "@/store/shortcuts";
 import { PdfThumbnail } from "./PdfThumbnail";
@@ -142,9 +143,9 @@ export function PdfRenderer({
         data.set(pdf);
         activeLoadingTask = pdfjs.getDocument({
           data,
-          cMapUrl: "/pdfjs/cmaps/",
+          cMapUrl: assetUrl("pdfjs/cmaps/"),
           cMapPacked: true,
-          standardFontDataUrl: "/pdfjs/standard_fonts/",
+          standardFontDataUrl: assetUrl("pdfjs/standard_fonts/"),
         });
         activeDoc = await activeLoadingTask.promise;
         if (controller.signal.aborted) {

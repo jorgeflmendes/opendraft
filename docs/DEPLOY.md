@@ -64,6 +64,17 @@ Two files in the project root (committed to the deploy branch):
 (Cloudflare evaluates rules top-to-bottom; the `/ctan/*` rule must
 come before the SPA fallback.)
 
+### GitHub Pages
+
+GitHub Pages cannot run a same-origin proxy, so this repository deploys the
+static client to Pages and uses the restricted `opendraft-ctan` Cloudflare
+Worker for TeX Live archives. The workflow at
+`.github/workflows/deploy-pages.yml` builds with the repository base path and
+the Worker URL, then publishes `dist/client/` after the full quality gate.
+
+The Worker only accepts `GET` and `HEAD` requests for package archives and
+grants CORS exclusively to `https://jorgeflmendes.github.io`.
+
 ### Vercel
 
 `vercel.json`:

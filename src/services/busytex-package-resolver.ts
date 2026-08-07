@@ -1,6 +1,7 @@
 import type { TexliveRemoteFile } from "texlyre-busytex";
 import { activeFilePaths, type Project } from "@/domain";
 import { CtanFetcher, type CtanFile } from "./ctan-fetcher";
+import { assetUrl } from "@/lib/asset-url";
 
 export interface BusyTexRuntimeFileResolver {
   resolveDeclared(
@@ -16,7 +17,7 @@ export interface BusyTexPackageResolverOptions {
   fetchImpl?: typeof fetch;
 }
 
-const DEFAULT_BASE_PATH = "/core/busytex";
+const DEFAULT_BASE_PATH = assetUrl("core/busytex");
 const PACKAGE_RE = /\\(?:usepackage|RequirePackage)(?:\s*\[[^\]]*])?\s*\{([^}]+)\}/gi;
 const CLASS_RE =
   /\\(?:documentclass|LoadClass|LoadClassWithOptions)(?:\s*\[[^\]]*])?\s*\{([^}]+)\}/gi;

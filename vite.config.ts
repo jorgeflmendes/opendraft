@@ -16,6 +16,11 @@ const serverDirectory = fileURLToPath(new URL("./dist/server", import.meta.url))
 const publicDirectory = fileURLToPath(new URL("./public", import.meta.url));
 const sitesWorkerFile = fileURLToPath(new URL("./src/hosting/sites-worker.ts", import.meta.url));
 
+function deploymentBasePath(value = process.env.VITE_BASE_PATH): string {
+  if (!value || value === "/") return "/";
+  return `/${value.replace(/^\/+|\/+$/g, "")}/`;
+}
+
 const sitesWorker = (): Plugin => ({
   name: "opendraft-sites-worker",
   async buildStart() {
@@ -40,6 +45,7 @@ const sitesWorker = (): Plugin => ({
 });
 
 export default defineConfig({
+  base: deploymentBasePath(),
   plugins: [react(), sitesWorker()],
   // BusyTeX's full TeX Live payload is intentionally excluded from production;
   // the compact SwiftLaTeX runtime is copied into the static artifact instead.

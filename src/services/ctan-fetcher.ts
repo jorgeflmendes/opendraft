@@ -1,4 +1,5 @@
 import { XzReadableStream } from "xz-decompress";
+import { assetUrl } from "@/lib/asset-url";
 import { readTar } from "./tar-reader";
 
 // Resolve missing TeX files through the SwiftLaTeX host protocol. Fetching the
@@ -28,10 +29,10 @@ export interface CtanFetcherOptions {
   pinnedPackageBase?: string | null;
 }
 
-const DEFAULT_INDEX_URL = "/engine/texlive-index.json";
+const DEFAULT_INDEX_URL = assetUrl("engine/texlive-index.json");
 /** TeX Live packages remain well below this ceiling under normal operation. */
 const DEFAULT_MAX_DECOMPRESSED_BYTES = 128 * 1024 * 1024;
-const DEFAULT_PINNED_PACKAGE_BASE = "/engine/packages";
+const DEFAULT_PINNED_PACKAGE_BASE = assetUrl("engine/packages");
 const MAX_PINNED_MANIFEST_BYTES = 64 * 1024;
 const MAX_PINNED_FILES = 128;
 const PINNED_RUNTIME_PACKAGES = new Set(["l3kernel"]);
@@ -41,7 +42,7 @@ const PINNED_RUNTIME_PACKAGES = new Set(["l3kernel"]);
 const VALID_PACKAGE_NAME = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 // Vite and the Sites worker both expose this same-origin boundary because CTAN
 // mirrors do not reliably provide CORS headers.
-const DEFAULT_MIRROR = import.meta.env.VITE_CTAN_MIRROR_BASE?.trim() || "/ctan";
+const DEFAULT_MIRROR = import.meta.env.VITE_CTAN_MIRROR_BASE?.trim() || assetUrl("ctan");
 
 type IndexShape = Record<string, string[] | undefined>;
 

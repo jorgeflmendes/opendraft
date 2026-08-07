@@ -5,6 +5,7 @@ import type {
 } from "texlyre-busytex";
 import { BusyTexRunner, LuaLatex, PdfLatex, XeLatex } from "texlyre-busytex";
 import { activeFilePaths, type CompileResult, type Project } from "@/domain";
+import { assetUrl } from "@/lib/asset-url";
 import type { CompileInput, CompileProgress, CompileService } from "./compile-service";
 import { analyseServerlessCompatibility, BUSYTEX_CAPABILITIES } from "./latex-compatibility";
 import { getFileExtension, dirname } from "./path-utils";
@@ -37,7 +38,7 @@ interface BusyTexCompileServiceOptions {
   createTool?: (runner: BusyTexRunnerLike, engine: BusyTexEngine) => BusyTexTool;
 }
 
-const DEFAULT_BASE_PATH = "/core/busytex";
+const DEFAULT_BASE_PATH = assetUrl("core/busytex");
 const DEFAULT_REMOTE_ENDPOINT = "";
 
 const SETUP_STEPS = ["Loading TeX Live 2026 WASM", "Preparing project files"] as const;
