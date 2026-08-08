@@ -21,6 +21,10 @@
 </p>
 
 <p align="center">
+  <a href="https://jorgeflmendes.github.io/opendraft/">Try OpenDraft in your browser</a>
+</p>
+
+<p align="center">
   <a href="#product-tour">Product tour</a> ·
   <a href="#capabilities">Capabilities</a> ·
   <a href="#architecture">Architecture</a> ·
